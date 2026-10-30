@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>br.edu.arena</groupId>
+        <groupId>br.ucsal.sd</groupId>
         <artifactId>arena-elementais</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
@@ -16,8 +16,24 @@
 
     <dependencies>
         <dependency>
-            <groupId>br.edu.arena</groupId>
+            <groupId>br.ucsal.sd</groupId>
             <artifactId>compartilhado</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>br.ucsal.sd.arena.servidor.ServidorMain</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

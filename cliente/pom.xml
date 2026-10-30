@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>br.edu.arena</groupId>
+        <groupId>br.ucsal.sd</groupId>
         <artifactId>arena-elementais</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
@@ -14,23 +14,14 @@
     <name>Arena de Elementais - Cliente</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <!-- Ajustar para a classe Application do cliente quando ela existir -->
-        <cliente.main.class>br.edu.arena.cliente.App</cliente.main.class>
-    </properties>
-
     <dependencies>
         <dependency>
-            <groupId>br.edu.arena</groupId>
+            <groupId>br.ucsal.sd</groupId>
             <artifactId>compartilhado</artifactId>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-fxml</artifactId>
         </dependency>
     </dependencies>
 
@@ -40,7 +31,7 @@
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>${cliente.main.class}</mainClass>
+                    <mainClass>br.ucsal.sd.arena.cliente.ClienteApp</mainClass>
                 </configuration>
             </plugin>
         </plugins>

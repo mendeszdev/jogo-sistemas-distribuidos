@@ -2,41 +2,51 @@
 
 Trabalho de Sistemas Distribuídos — jogo multiplayer usando Java RMI.
 
-## Stack
+## Requisitos
 
-- Java 21
-- Maven multi-módulo
-- Comunicação: Java RMI
-- Frontend: JavaFX
+- JDK 21
+- Maven 3.9+
 
 ## Estrutura
 
 ```
 arena-elementais/
-├── pom.xml            # POM pai (versões e módulos)
+├── pom.xml            # POM pai (versões, plugins e lista de módulos)
 ├── compartilhado/     # Contrato comum: interfaces remotas e DTOs
 ├── servidor/          # Lógica do jogo e registry RMI
-└── cliente/           # Interface JavaFX (FXML, CSS, controllers)
+└── cliente/           # Interface JavaFX
 ```
 
 `servidor` e `cliente` dependem de `compartilhado`.
 
-## Build
+## Compilar
+
+Cada módulo separadamente (o `-am` compila também as dependências):
 
 ```bash
-mvn clean install
+mvn -pl compartilhado -am package
+mvn -pl servidor -am package
+mvn -pl cliente -am package
 ```
 
-## Executar o cliente
+Todos de uma vez:
 
 ```bash
-mvn -pl cliente javafx:run
+mvn clean package
 ```
 
-Antes, ajuste a propriedade `cliente.main.class` em `cliente/pom.xml` para a classe `Application` real.
+## Executar
 
-## Regras de uso de IA
+Cliente (JavaFX):
 
-- **Proibido** gerar, completar, revisar ou sugerir código Java em `servidor` e `compartilhado` (interfaces remotas, DTOs, lógica do jogo, concorrência, sincronização, registry, callbacks).
-- **Permitido** no módulo `cliente` apenas a parte visual (telas JavaFX, FXML, CSS, layout).
-- **Permitido** configurar build (`pom.xml`), estrutura de pastas, `.gitignore` e README.
+```bash
+mvn -pl cliente -am javafx:run
+```
+
+Servidor (depois de existir a classe `ServidorMain`):
+
+```bash
+java -cp "servidor/target/servidor-1.0-SNAPSHOT.jar;compartilhado/target/compartilhado-1.0-SNAPSHOT.jar" br.ucsal.sd.arena.servidor.ServidorMain
+```
+
+No Linux/macOS, troque `;` por `:` no classpath.

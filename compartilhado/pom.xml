@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>br.edu.arena</groupId>
+        <groupId>br.ucsal.sd</groupId>
         <artifactId>arena-elementais</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
