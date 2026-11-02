@@ -18,3 +18,8 @@ desktop.ini
 
 # Logs
 *.log
+
+# Claude Code
+CLAUDE.md
+CLAUDE.local.md
+.claude/
