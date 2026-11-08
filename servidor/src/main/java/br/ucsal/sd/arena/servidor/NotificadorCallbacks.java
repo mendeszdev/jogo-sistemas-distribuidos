@@ -28,10 +28,14 @@ public final class NotificadorCallbacks {
 
     private final ExecutorService executor = Executors.newCachedThreadPool(new FabricaThreads());
 
-    /** Agenda o envio e retorna imediatamente. Falhas só são registradas em log (remoção do jogador: card 22). */
+    /**
+     * Agenda o envio e retorna imediatamente. Envios para a mesma sessão são entregues na ordem de
+     * disparo (fila serial por sessão); sessões diferentes correm em paralelo no executor.
+     * Falhas só são registradas em log (remoção do jogador: card 22).
+     */
     public void notificar(SessaoJogador sessao, Envio envio) {
         try {
-            executor.execute(() -> {
+            sessao.getFilaNotificacoes().submeter(executor, () -> {
                 try {
                     envio.enviar(sessao.getCallback());
                 } catch (RemoteException e) {
@@ -43,6 +47,11 @@ public final class NotificadorCallbacks {
         } catch (RejectedExecutionException e) {
             LOG.fine("Notificador encerrado; envio descartado para " + sessao.getNome());
         }
+    }
+
+    /** Libera a fila da sessão encerrada: descarta o pendente e ignora novos envios. */
+    public void liberar(SessaoJogador sessao) {
+        sessao.getFilaNotificacoes().encerrar();
     }
 
     public void encerrar() {

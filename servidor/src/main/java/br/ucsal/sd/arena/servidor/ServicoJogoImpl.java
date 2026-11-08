@@ -59,6 +59,7 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
             throw new SessaoInvalidaException("Sessão inválida");
         }
         tokenPorNome.remove(sessao.getNome().toLowerCase(), token);
+        notificador.liberar(sessao);
         LOG.info("Jogador desconectado: " + sessao.getNome());
         notificarLobby();
     }
