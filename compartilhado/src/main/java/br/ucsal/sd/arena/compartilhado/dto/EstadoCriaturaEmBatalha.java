@@ -8,4 +8,8 @@ public record EstadoCriaturaEmBatalha(int idCriatura, int hpAtual) implements Se
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    public boolean derrubada(){
+        return hpAtual <= 0;
+    }
 }
