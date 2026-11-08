@@ -94,6 +94,8 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
     @Override
     public void enviarAcao(String token, Acao acao) throws RemoteException, SessaoInvalidaException,
             FaseInvalidaException, ForaDaRodadaException, AcaoInvalidaException {
+        // TODO card 19: com a Partida (cards 14/15), obter a RodadaSimultanea corrente da partida do token e
+        //  chamar rodada.registrarAcao(token, acao); os callbacks saem fora do lock (ver RodadaSimultanea).
         throw new UnsupportedOperationException("TODO card 19");
     }
 
