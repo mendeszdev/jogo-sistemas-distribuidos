@@ -10,6 +10,7 @@ public final class SessaoJogador {
     private final String nome;
     private final String token;
     private final ClienteCallback callback;
+    private final FilaSerial filaNotificacoes = new FilaSerial();
     private volatile Instant ultimoHeartbeat;
 
     public SessaoJogador(String nome, String token, ClienteCallback callback) {
@@ -29,6 +30,11 @@ public final class SessaoJogador {
 
     public ClienteCallback getCallback() {
         return callback;
+    }
+
+    /** Fila que serializa as notificações desta sessão (uso do {@link NotificadorCallbacks}). */
+    FilaSerial getFilaNotificacoes() {
+        return filaNotificacoes;
     }
 
     public Instant getUltimoHeartbeat() {
