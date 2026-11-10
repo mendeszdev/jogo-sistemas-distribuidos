@@ -6,7 +6,8 @@ import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoRodada;
 import br.ucsal.sd.arena.compartilhado.remoto.ClienteCallback;
-
+import br.ucsal.sd.arena.compartilhado.dto.JogadorOnline;
+import br.ucsal.sd.arena.compartilhado.dto.StatusJogador;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ public final class TesteOrdemNotificacoes {
         }
 
         @Override
-        public void jogadoresOnlineAtualizados(List<String> nomes) {
+        public void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) {
             try {
                 if (atrasoMaxMs > 0) {
                     Thread.sleep(ThreadLocalRandom.current().nextLong(atrasoMaxMs + 1));
@@ -38,7 +39,7 @@ public final class TesteOrdemNotificacoes {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            recebidos.add(Integer.parseInt(nomes.get(0)));
+            recebidos.add(Integer.parseInt(jogadores.get(0).nome()));
             fim.countDown();
         }
 
@@ -58,13 +59,13 @@ public final class TesteOrdemNotificacoes {
             Registrador aleatorio = new Registrador(5);
             Registrador lento = new Registrador(0) { // 100 ms fixos por evento: ~5 s no total
                 @Override
-                public void jogadoresOnlineAtualizados(List<String> nomes) {
+                public void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
-                    super.jogadoresOnlineAtualizados(nomes);
+                    super.jogadoresOnlineAtualizados(jogadores);
                 }
             };
             SessaoJogador sRapido = new SessaoJogador("Rapido", "t1", rapido);
@@ -73,7 +74,7 @@ public final class TesteOrdemNotificacoes {
 
             long inicio = System.nanoTime();
             for (int i = 0; i < TOTAL; i++) {
-                final List<String> lista = List.of(String.valueOf(i));
+                final List<JogadorOnline> lista = List.of(new JogadorOnline(String.valueOf(i), StatusJogador.LIVRE));
                 for (SessaoJogador s : List.of(sRapido, sAleatorio, sLento)) {
                     notificador.notificar(s, cb -> cb.jogadoresOnlineAtualizados(lista));
                 }
@@ -101,8 +102,7 @@ public final class TesteOrdemNotificacoes {
             Registrador removido = new Registrador(0);
             SessaoJogador sRemovido = new SessaoJogador("Removido", "t4", removido);
             notificador.liberar(sRemovido);
-            notificador.notificar(sRemovido, cb -> cb.jogadoresOnlineAtualizados(List.of("0")));
-            Thread.sleep(200);
+            notificador.notificar(sRemovido, cb -> cb.jogadoresOnlineAtualizados(List.of(new JogadorOnline("0", StatusJogador.LIVRE))));            Thread.sleep(200);
             boolean liberado = removido.recebidos.isEmpty();
             System.out.println("envio após liberar a fila ignorado -> " + (liberado ? "OK" : "FALHOU"));
             ok &= liberado;

@@ -1,10 +1,6 @@
 package br.ucsal.sd.arena.compartilhado.remoto;
 
-import br.ucsal.sd.arena.compartilhado.dto.EstadoBatalha;
-import br.ucsal.sd.arena.compartilhado.dto.EstadoDraft;
-import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
-import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
-import br.ucsal.sd.arena.compartilhado.dto.ResultadoRodada;
+import br.ucsal.sd.arena.compartilhado.dto.*;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -36,5 +32,5 @@ public interface ClienteCallback extends Remote {
     void adversarioDesconectado(int segundosTolerancia) throws RemoteException;
 
     /** Chamado quando entra ou sai um jogador, para atualizar a lista do lobby. */
-    void jogadoresOnlineAtualizados(List<String> nomes) throws RemoteException;
+    void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) throws RemoteException;
 }

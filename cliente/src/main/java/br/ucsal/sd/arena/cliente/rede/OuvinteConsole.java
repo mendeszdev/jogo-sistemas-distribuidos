@@ -5,7 +5,7 @@ import br.ucsal.sd.arena.compartilhado.dto.EstadoDraft;
 import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoRodada;
-
+import br.ucsal.sd.arena.compartilhado.dto.JogadorOnline;
 import java.util.List;
 
 /** Ouvinte de depuração: imprime cada evento recebido no console. */
@@ -52,7 +52,7 @@ public class OuvinteConsole implements OuvinteEventosJogo {
     }
 
     @Override
-    public void jogadoresOnlineAtualizados(List<String> nomes) {
-        imprimir("jogadoresOnlineAtualizados", nomes);
+    public void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) {
+                imprimir("jogadoresOnlineAtualizados", jogadores);
     }
 }

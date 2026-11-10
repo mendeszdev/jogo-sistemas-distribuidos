@@ -6,6 +6,7 @@ import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoRodada;
 import br.ucsal.sd.arena.compartilhado.remoto.ClienteCallback;
+import br.ucsal.sd.arena.compartilhado.dto.JogadorOnline;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -53,7 +54,8 @@ public class ClienteCallbackImpl extends UnicastRemoteObject implements ClienteC
     }
 
     @Override
-    public void jogadoresOnlineAtualizados(List<String> nomes) throws RemoteException {
-        ouvinte.jogadoresOnlineAtualizados(nomes);
+    public void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) throws RemoteException {
+                ouvinte.jogadoresOnlineAtualizados(jogadores);
+
     }
 }

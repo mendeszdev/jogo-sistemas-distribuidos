@@ -1,10 +1,6 @@
 package br.ucsal.sd.arena.cliente.rede;
 
-import br.ucsal.sd.arena.compartilhado.dto.EstadoBatalha;
-import br.ucsal.sd.arena.compartilhado.dto.EstadoDraft;
-import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
-import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
-import br.ucsal.sd.arena.compartilhado.dto.ResultadoRodada;
+import br.ucsal.sd.arena.compartilhado.dto.*;
 
 import java.util.List;
 
@@ -26,5 +22,4 @@ public interface OuvinteEventosJogo {
 
     void adversarioDesconectado(int segundosTolerancia);
 
-    void jogadoresOnlineAtualizados(List<String> nomes);
-}
+    void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores);}

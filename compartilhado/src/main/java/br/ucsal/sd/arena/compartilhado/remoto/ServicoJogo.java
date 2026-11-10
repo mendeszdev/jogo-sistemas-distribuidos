@@ -9,6 +9,7 @@ import br.ucsal.sd.arena.compartilhado.excecao.JogadorJaEmPartidaException;
 import br.ucsal.sd.arena.compartilhado.excecao.LimiteDeEscolhasException;
 import br.ucsal.sd.arena.compartilhado.excecao.NomeEmUsoException;
 import br.ucsal.sd.arena.compartilhado.excecao.SessaoInvalidaException;
+import br.ucsal.sd.arena.compartilhado.dto.JogadorOnline;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -40,11 +41,10 @@ public interface ServicoJogo extends Remote {
     /**
      * Chamado para exibir o lobby.
      *
-     * @return nomes dos jogadores atualmente online
+     * @return jogadores atualmente online, cada um com seu status
      * @throws SessaoInvalidaException se o token não corresponde a uma sessão ativa
      */
-    List<String> listarJogadoresOnline(String token) throws RemoteException, SessaoInvalidaException;
-
+    List<JogadorOnline> listarJogadoresOnline(String token) throws RemoteException, SessaoInvalidaException;
     /**
      * Chamado ao clicar em "buscar partida"; coloca o jogador na fila de matchmaking.
      *
