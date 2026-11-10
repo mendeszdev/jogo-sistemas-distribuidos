@@ -1,0 +1,39 @@
+/* Paleta Arena de Elementais (tema escuro) */
+.raiz { -fx-background-color: #14161F; }
+.label { -fx-text-fill: #F2F4F8; }
+
+.cartao { -fx-background-color: #1E2230; -fx-border-color: #2E3347; -fx-border-width: 2; }
+.cartao-tracejado { -fx-border-style: solid; }
+
+.titulo { -fx-font-size: 26px; -fx-font-weight: bold; }
+.titulo-pequeno { -fx-font-size: 20px; -fx-font-weight: bold; }
+.subtitulo { -fx-font-size: 16px; -fx-font-weight: bold; }
+.rotulo { -fx-font-size: 13px; -fx-font-weight: bold; }
+.secundario { -fx-text-fill: #A8B0C4; -fx-font-size: 12px; }
+.erro { -fx-text-fill: #F0506E; -fx-font-size: 13px; -fx-font-weight: bold; }
+
+.text-field {
+    -fx-background-color: #14161F; -fx-text-fill: #F2F4F8; -fx-prompt-text-fill: #A8B0C4;
+    -fx-border-color: #4A5170; -fx-border-width: 2; -fx-background-radius: 0; -fx-border-radius: 0;
+    -fx-highlight-fill: #8B7CF6; -fx-highlight-text-fill: #14161F; -fx-pref-height: 44; -fx-font-size: 14px;
+}
+.text-field:focused { -fx-border-color: #8B7CF6; }
+
+.botao {
+    -fx-background-color: #1E2230; -fx-text-fill: #F2F4F8; -fx-border-color: #4A5170; -fx-border-width: 2;
+    -fx-background-radius: 0; -fx-border-radius: 0; -fx-font-size: 14px; -fx-font-weight: bold;
+    -fx-min-height: 44; -fx-cursor: hand;
+}
+.botao:hover { -fx-border-color: #8B7CF6; }
+.botao:focused { -fx-border-color: #8B7CF6; }
+.botao-primario { -fx-background-color: #8B7CF6; -fx-text-fill: #14161F; -fx-border-color: #8B7CF6; }
+.botao-primario:hover { -fx-background-color: #A196F8; -fx-border-color: #A196F8; }
+.botao:disabled { -fx-opacity: 0.5; }
+
+.linha-jogador { -fx-border-color: transparent transparent #2E3347 transparent; -fx-border-width: 0 0 1 0; -fx-padding: 10 0 10 0; }
+.tag { -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 1 6 1 6; -fx-border-width: 1.5; -fx-border-color: #4A5170; }
+.tag-em-fila { -fx-background-color: #8B7CF6; -fx-border-color: #8B7CF6; }
+.tag-em-fila.label { -fx-text-fill: #14161F; }
+
+.rolagem { -fx-background-color: transparent; -fx-background: transparent; }
+.rolagem > .viewport { -fx-background-color: transparent; }
