@@ -59,6 +59,9 @@ public final class TelaLobby implements OuvinteEventosJogo {
 
     private Runnable aoSair = () -> { };
     private Consumer<PartidaInfo> aoPartidaEncontrada = info -> { };
+    private Consumer<EstadoDraft> aoDraftAtualizado = estado -> { };
+    private Consumer<EstadoBatalha> aoBatalhaIniciada = estado -> { };
+    private Consumer<ResultadoPartida> aoPartidaEncerrada = resultado -> { };
 
     public TelaLobby(String nome, String endereco, ConexaoServidor conexao) {
         this.nome = nome;
@@ -152,6 +155,19 @@ public final class TelaLobby implements OuvinteEventosJogo {
     /** Navegação para o draft (tela de outro card). */
     public void setAoPartidaEncontrada(Consumer<PartidaInfo> aoPartidaEncontrada) {
         this.aoPartidaEncontrada = aoPartidaEncontrada;
+    }
+
+    /** Delegação executada na thread JavaFX, mantendo a ordem dos callbacks da sessão. */
+    public void setAoDraftAtualizado(Consumer<EstadoDraft> ouvinte) {
+        aoDraftAtualizado = ouvinte;
+    }
+
+    public void setAoBatalhaIniciada(Consumer<EstadoBatalha> ouvinte) {
+        aoBatalhaIniciada = ouvinte;
+    }
+
+    public void setAoPartidaEncerrada(Consumer<ResultadoPartida> ouvinte) {
+        aoPartidaEncerrada = ouvinte;
     }
 
     // ---------------------------------------------------------------- ações do usuário
@@ -284,16 +300,22 @@ public final class TelaLobby implements OuvinteEventosJogo {
 
     // Eventos das fases seguintes: tratados pelas telas de draft, batalha e resultado (outros cards).
     @Override
-    public void draftAtualizado(EstadoDraft estado) { }
+    public void draftAtualizado(EstadoDraft estado) {
+        Platform.runLater(() -> aoDraftAtualizado.accept(estado));
+    }
 
     @Override
-    public void batalhaIniciada(EstadoBatalha estado) { }
+    public void batalhaIniciada(EstadoBatalha estado) {
+        Platform.runLater(() -> aoBatalhaIniciada.accept(estado));
+    }
 
     @Override
     public void rodadaResolvida(ResultadoRodada resultado) { }
 
     @Override
-    public void partidaEncerrada(ResultadoPartida resultado) { }
+    public void partidaEncerrada(ResultadoPartida resultado) {
+        Platform.runLater(() -> aoPartidaEncerrada.accept(resultado));
+    }
 
     @Override
     public void adversarioDesconectado(int segundosTolerancia) { }

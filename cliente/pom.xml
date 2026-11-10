@@ -15,6 +15,18 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- Apenas nos testes: valida dois clientes contra o servidor RMI real. -->
+        <dependency>
+            <groupId>br.ucsal.sd</groupId>
+            <artifactId>servidor</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>br.ucsal.sd</groupId>
             <artifactId>compartilhado</artifactId>

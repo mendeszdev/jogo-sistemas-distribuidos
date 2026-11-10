@@ -37,3 +37,20 @@
 
 .rolagem { -fx-background-color: transparent; -fx-background: transparent; }
 .rolagem > .viewport { -fx-background-color: transparent; }
+
+/* Draft: o estado continua legível mesmo nos cartões sem ação disponível. */
+.contador-draft { -fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #C4B5FD; }
+.contador-urgente { -fx-text-fill: #FF6B7A; }
+.criatura-draft {
+    -fx-background-color: #1E2230; -fx-border-color: #4A5170; -fx-border-width: 2;
+    -fx-padding: 10; -fx-cursor: hand; -fx-alignment: top-left;
+}
+.criatura-draft:hover, .criatura-draft:focused { -fx-border-color: #A196F8; }
+.criatura-draft:disabled { -fx-opacity: 1; -fx-cursor: default; }
+.criatura-draft:disabled .label { -fx-opacity: 1; }
+.criatura-minha, .criatura-minha:disabled { -fx-border-color: #4ADE80; -fx-background-color: #18332C; }
+.criatura-adversaria, .criatura-adversaria:disabled { -fx-border-color: #FB7185; -fx-background-color: #38232E; }
+.ataque-draft { -fx-font-size: 11px; -fx-text-fill: #C5CCDC; }
+.tipo-fogo { -fx-text-fill: #FFAA72; -fx-border-color: #F97316; }
+.tipo-agua { -fx-text-fill: #7DD3FC; -fx-border-color: #38BDF8; }
+.tipo-planta { -fx-text-fill: #86EFAC; -fx-border-color: #4ADE80; }
