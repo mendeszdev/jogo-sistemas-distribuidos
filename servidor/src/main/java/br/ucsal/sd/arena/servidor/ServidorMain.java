@@ -1,7 +1,7 @@
 package br.ucsal.sd.arena.servidor;
 
 import br.ucsal.sd.arena.compartilhado.remoto.ServicoJogo;
-
+import java.time.Duration;
 import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -24,6 +24,7 @@ public final class ServidorMain {
     }
 
     public static void main(String[] args) throws Exception {
+        configurarTimeoutsRmi(); // antes de qualquer uso do RMI
         int porta = lerPorta(args);
         String hostname = lerHostname(args);
 
@@ -36,6 +37,10 @@ public final class ServidorMain {
 
         NotificadorCallbacks notificador = new NotificadorCallbacks();
         ServicoJogoImpl servico = new ServicoJogoImpl(notificador);
+        int tolerancia = Integer.getInteger("arena.toleranciaSegundos", HeartbeatMonitor.DISCONNECT_TOLERANCE_SEC);
+        HeartbeatMonitor monitor = new HeartbeatMonitor(servico::sessoesAtivas, servico::removerSessao,
+                Duration.ofSeconds(tolerancia));
+        monitor.iniciar();
         Registry registry = LocateRegistry.createRegistry(porta);
         registry.rebind(ServicoJogo.NOME_NO_REGISTRY, servico);
         LOG.info("Registry criado na porta " + porta);
@@ -54,8 +59,15 @@ public final class ServidorMain {
             } catch (NoSuchObjectException e) {
                 LOG.log(Level.WARNING, "Falha no unexport", e);
             }
+            monitor.close();
             notificador.encerrar();
         }, "shutdown-servidor"));
+    }
+
+    private static void configurarTimeoutsRmi() {
+                System.setProperty("sun.rmi.transport.tcp.responseTimeout", "5000");
+                System.setProperty("sun.rmi.transport.tcp.handshakeTimeout", "5000");
+                System.setProperty("sun.rmi.transport.tcp.readTimeout", "30000");
     }
 
     private static int lerPorta(String[] args) {

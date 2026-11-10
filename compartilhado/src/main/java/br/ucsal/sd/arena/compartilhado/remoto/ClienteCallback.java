@@ -32,5 +32,4 @@ public interface ClienteCallback extends Remote {
     void adversarioDesconectado(int segundosTolerancia) throws RemoteException;
 
     /** Chamado quando entra ou sai um jogador, para atualizar a lista do lobby. */
-    void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) throws RemoteException;
-}
+    void jogadoresOnlineAtualizados(List<JogadorOnline> jogadores) throws RemoteException;}

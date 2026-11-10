@@ -8,11 +8,13 @@ import br.ucsal.sd.arena.compartilhado.excecao.CriaturaIndisponivelException;
 import br.ucsal.sd.arena.compartilhado.excecao.FaseInvalidaException;
 import br.ucsal.sd.arena.compartilhado.excecao.ForaDaRodadaException;
 import br.ucsal.sd.arena.compartilhado.excecao.LimiteDeEscolhasException;
-
+import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Objects;
 
 public final class Partida {
-
+    private final AtomicBoolean encerrada = new AtomicBoolean();
     private final String id;
     private final SessaoJogador jogadorA;
     private final SessaoJogador jogadorB;
@@ -69,5 +71,21 @@ public final class Partida {
     public void enviarAcao(SessaoJogador jogador, Acao acao) throws FaseInvalidaException,
             ForaDaRodadaException, AcaoInvalidaException {
         throw new UnsupportedOperationException("TODO card 19");
+    }
+    /**
+     * W.O.: o jogador desconectado perde e o adversário vence. Idempotente: só a primeira chamada encerra.
+     *
+     * @return true se esta chamada encerrou a partida
+     */
+    public boolean encerrarPorWO(SessaoJogador desconectado) {
+        if (!encerrada.compareAndSet(false, true)) {
+            return false;
+        }
+        fase = FasePartida.ENCERRADA;
+        SessaoJogador vencedor = getAdversario(desconectado);
+        // TODO Samuel: preencher rodadasJogadas e os times finais quando draft/batalha existirem
+        ResultadoPartida resultado = new ResultadoPartida(vencedor.getNome(), true, 0, List.of(), List.of());
+        notificador.notificar(vencedor, cb -> cb.partidaEncerrada(resultado));
+        return true;
     }
 }
