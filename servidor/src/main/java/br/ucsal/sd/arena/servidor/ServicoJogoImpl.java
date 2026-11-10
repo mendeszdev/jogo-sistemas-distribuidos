@@ -129,7 +129,12 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
     @Override
     public void escolherCriatura(String token, int idCriatura) throws RemoteException, SessaoInvalidaException,
             FaseInvalidaException, CriaturaIndisponivelException, LimiteDeEscolhasException {
-        throw new UnsupportedOperationException("TODO card 15");
+        SessaoJogador sessao = exigirSessao(token);
+        Partida partida = sessao.getPartida();
+        if (partida == null) {
+            throw new FaseInvalidaException("Jogador não está em uma partida");
+        }
+        partida.escolherCriatura(sessao, idCriatura);
     }
 
     @Override
