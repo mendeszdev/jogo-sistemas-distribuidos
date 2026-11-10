@@ -12,9 +12,11 @@ public record EstadoPartida(PartidaInfo partida, FasePartida fase, EstadoDraft d
     private static final long serialVersionUID = 1L;
 
     public EstadoPartida {
-        Objects.requireNonNull(info);
-        Objects.requireNonNull(fase);
-        Objects.requireNonNull(draft);
+        Objects.requireNonNull(partida, "partida");
+        Objects.requireNonNull(fase, "fase");
+        if(fase == FasePartida.DRAFT) {
+            Objects.requireNonNull(draft, "draft obrigatóriona frase DRAFT");
+        }
 
         if(fase == FasePartida.BATALHA) {
             Objects.requireNonNull(batalha, "batalha obrigatória na fase BATALHA");
