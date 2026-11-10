@@ -19,13 +19,24 @@ class PartidaDraftTest {
     private final ExecutorService threads = Executors.newFixedThreadPool(2);
     private final List<EstadoDraft> eventosA = new CopyOnWriteArrayList<>();
     private final List<EstadoDraft> eventosB = new CopyOnWriteArrayList<>();
-    private final SessaoJogador a = new SessaoJogador("A", "A", callback(eventosA::add));
-    private final SessaoJogador b = new SessaoJogador("B", "B", callback(eventosB::add));
+    private final List<EstadoBatalha> batalhasA = new CopyOnWriteArrayList<>();
+    private final List<EstadoBatalha> batalhasB = new CopyOnWriteArrayList<>();
+    private final SessaoJogador a = new SessaoJogador("A", "A", callback(eventosA::add, batalhasA::add));
+    private final SessaoJogador b = new SessaoJogador("B", "B", callback(eventosB::add, batalhasB::add));
 
-    private static ClienteCallback callback(Consumer<EstadoDraft> receber) {
+    private static ClienteCallback callback(Consumer<EstadoDraft> receberDraft) {
+        return callback(receberDraft, estado -> { });
+    }
+
+    private static ClienteCallback callback(Consumer<EstadoDraft> receberDraft,
+                                            Consumer<EstadoBatalha> receberBatalha) {
         return (ClienteCallback) Proxy.newProxyInstance(ClienteCallback.class.getClassLoader(),
                 new Class<?>[]{ClienteCallback.class}, (proxy, method, args) -> {
-                    if (method.getName().equals("draftAtualizado")) receber.accept((EstadoDraft) args[0]);
+                    switch (method.getName()) {
+                        case "draftAtualizado" -> receberDraft.accept((EstadoDraft) args[0]);
+                        case "batalhaIniciada" -> receberBatalha.accept((EstadoBatalha) args[0]);
+                        default -> { }
+                    }
                     return null;
                 });
     }
@@ -225,6 +236,43 @@ class PartidaDraftTest {
         } finally {
             UnicastRemoteObject.unexportObject(servico, true);
         }
+    }
+
+    @Test
+    void terminoDoDraftDisparaBatalhaIniciadaParaOsDoisJogadores() throws Exception {
+        Partida partida = nova();
+        for (int id = 1; id <= 3; id++) partida.escolherCriatura(a, id);
+        for (int id = 4; id <= 6; id++) partida.escolherCriatura(b, id);
+        notificador.encerrar();
+        assertEquals(FasePartida.BATALHA, partida.getFase());
+        assertEquals(1, batalhasA.size());
+        assertEquals(1, batalhasB.size());
+        EstadoBatalha estadoA = batalhasA.get(0);
+        assertEquals(1, estadoA.numeroRodada());
+        assertEquals(1, estadoA.minhaAtiva().idCriatura());
+        assertEquals(List.of(2, 3), estadoA.minhasReservas().stream().map(EstadoCriaturaEmBatalha::idCriatura).toList());
+        assertEquals(4, estadoA.ativaAdversario().idCriatura());
+        assertEquals(2, estadoA.reservasRestantesAdversario());
+        Criatura primeira = CatalogoCriaturas.listar().stream().filter(c -> c.id() == 1).findFirst().orElseThrow();
+        assertEquals(primeira.hpMax(), estadoA.minhaAtiva().hpAtual());
+        EstadoBatalha estadoB = batalhasB.get(0);
+        assertEquals(4, estadoB.minhaAtiva().idCriatura());
+        assertEquals(1, estadoB.ativaAdversario().idCriatura());
+    }
+
+    @Test
+    void timeoutDoDraftTambemDisparaBatalhaIniciada() throws Exception {
+        Partida partida = new Partida("to", a, b, notificador, timers, Duration.ofMillis(30));
+        partida.iniciar();
+        for (int tentativas = 0; tentativas < 200 && (batalhasA.isEmpty() || batalhasB.isEmpty()); tentativas++) {
+            Thread.sleep(20);
+        }
+        notificador.encerrar();
+        assertEquals(FasePartida.BATALHA, partida.getFase());
+        assertEquals(1, batalhasA.size());
+        assertEquals(1, batalhasB.size());
+        assertEquals(2, batalhasA.get(0).minhasReservas().size());
+        assertEquals(2, batalhasA.get(0).reservasRestantesAdversario());
     }
 
     @Test
