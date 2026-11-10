@@ -2,6 +2,8 @@ package br.ucsal.sd.arena.servidor;
 
 import br.ucsal.sd.arena.compartilhado.dto.Acao;
 import br.ucsal.sd.arena.compartilhado.dto.Criatura;
+import br.ucsal.sd.arena.compartilhado.dto.EstadoBatalha;
+import br.ucsal.sd.arena.compartilhado.dto.EstadoCriaturaEmBatalha;
 import br.ucsal.sd.arena.compartilhado.dto.EstadoDraft;
 import br.ucsal.sd.arena.compartilhado.dto.FasePartida;
 import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
@@ -174,8 +176,28 @@ public final class Partida {
     }
 
     private void terminarDraft() {
-        if (transitar(FasePartida.DRAFT, FasePartida.BATALHA)) cancelarTimer();
-        // EstadoBatalha e batalhaIniciada pertencem ao card 19.
+        if (!transitar(FasePartida.DRAFT, FasePartida.BATALHA)) return;
+        cancelarTimer();
+        EstadoBatalha estadoA = estadoBatalhaInicial(jogadorA);
+        EstadoBatalha estadoB = estadoBatalhaInicial(jogadorB);
+        notificador.notificar(jogadorA, cb -> cb.batalhaIniciada(estadoA));
+        notificador.notificar(jogadorB, cb -> cb.batalhaIniciada(estadoB));
+    }
+
+    private EstadoBatalha estadoBatalhaInicial(SessaoJogador jogador) {
+        List<Integer> minhas = new ArrayList<>(escolhasDe(jogador));
+        List<Integer> adversarias = new ArrayList<>(escolhasDe(getAdversario(jogador)));
+        EstadoCriaturaEmBatalha ativa = emBatalha(minhas.get(0));
+        List<EstadoCriaturaEmBatalha> reservas = List.of(emBatalha(minhas.get(1)), emBatalha(minhas.get(2)));
+        EstadoCriaturaEmBatalha ativaAdversario = emBatalha(adversarias.get(0));
+        // Timer da primeira rodada será iniciado quando enviarAcao for implementado (card 19 pendente).
+        return new EstadoBatalha(1, ativa, reservas, ativaAdversario, 2, 0);
+    }
+
+    private EstadoCriaturaEmBatalha emBatalha(int idCriatura) {
+        Criatura criatura = pool.stream().filter(c -> c.id() == idCriatura).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Criatura ausente do pool: " + idCriatura));
+        return new EstadoCriaturaEmBatalha(criatura.id(), criatura.hpMax());
     }
 
     private boolean transitar(FasePartida de, FasePartida para) {
