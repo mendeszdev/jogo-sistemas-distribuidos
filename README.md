@@ -40,8 +40,14 @@ mvn clean package
 Cliente (JavaFX):
 
 ```bash
-mvn -pl cliente -am javafx:run
+mvn install -DskipTests
+mvn -pl cliente javafx:run
 ```
+
+Abra o comando `javafx:run` em dois terminais para jogar com dois clientes.
+Após alterar os contratos de `compartilhado`, recompile e reinicie servidor e clientes juntos.
+As regras do motor, integração dos turnos e roteiro de teste estão em
+[Motor de batalha](docs/task-18-motor-batalha.md).
 
 Servidor (depois de existir a classe `ServidorMain`):
 

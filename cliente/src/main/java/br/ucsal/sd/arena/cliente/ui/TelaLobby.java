@@ -148,6 +148,10 @@ public final class TelaLobby implements OuvinteEventosJogo {
         return conexao;
     }
 
+    public String getNome() { return nome; }
+
+    public void buscarNovaPartida() { buscar(); }
+
     /** O que fazer depois de sair do lobby (voltar à tela de conexão). */
     public void setAoSair(Runnable aoSair) {
         this.aoSair = aoSair;
@@ -321,7 +325,12 @@ public final class TelaLobby implements OuvinteEventosJogo {
 
     @Override
     public void partidaEncerrada(ResultadoPartida resultado) {
-        Platform.runLater(() -> aoPartidaEncerrada.accept(resultado));
+        Platform.runLater(() -> {
+            partidaEncontrada = false;
+            sairDaFila();
+            mensagem.setText("");
+            aoPartidaEncerrada.accept(resultado);
+        });
     }
 
     @Override

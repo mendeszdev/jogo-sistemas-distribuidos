@@ -17,6 +17,7 @@ class PartidaDraftTest {
     private final NotificadorCallbacks notificador = new NotificadorCallbacks();
     private final ScheduledThreadPoolExecutor timers = new ScheduledThreadPoolExecutor(1);
     private final ExecutorService threads = Executors.newFixedThreadPool(2);
+    private final List<Partida> partidas = new ArrayList<>();
     private final List<EstadoDraft> eventosA = new CopyOnWriteArrayList<>();
     private final List<EstadoDraft> eventosB = new CopyOnWriteArrayList<>();
     private final List<EstadoBatalha> batalhasA = new CopyOnWriteArrayList<>();
@@ -43,6 +44,7 @@ class PartidaDraftTest {
 
     private Partida nova(Duration duracao) {
         Partida partida = new Partida("teste", a, b, notificador, timers, duracao);
+        partidas.add(partida);
         partida.iniciar();
         return partida;
     }
@@ -51,6 +53,7 @@ class PartidaDraftTest {
 
     @AfterEach
     void encerrar() {
+        for (Partida partida : partidas) partida.encerrarPorWO(a);
         timers.shutdownNow();
         threads.shutdownNow();
         notificador.encerrar();
@@ -145,6 +148,7 @@ class PartidaDraftTest {
         assertEquals(3, estado.escolhasAdversario().size());
         assertTrue(Collections.disjoint(estado.minhasEscolhas(), estado.escolhasAdversario()));
         assertEquals(0, estado.segundosRestantes());
+        partida.encerrarPorWO(x);
     }
 
     @Test
@@ -180,6 +184,7 @@ class PartidaDraftTest {
             assertTrue(Collections.disjoint(estado.minhasEscolhas(), estado.escolhasAdversario()));
             partida.fecharDraftPorTimeout(1);
             assertEquals(estado, partida.getEstadoDraft(a));
+            partida.encerrarPorWO(a);
         }
         notificador.encerrar();
         // Sete snapshots por sala: inicial + seis escolhas. Timeout tardio não duplica o final.
@@ -263,6 +268,7 @@ class PartidaDraftTest {
     @Test
     void timeoutDoDraftTambemDisparaBatalhaIniciada() throws Exception {
         Partida partida = new Partida("to", a, b, notificador, timers, Duration.ofMillis(30));
+        partidas.add(partida);
         partida.iniciar();
         for (int tentativas = 0; tentativas < 200 && (batalhasA.isEmpty() || batalhasB.isEmpty()); tentativas++) {
             Thread.sleep(20);

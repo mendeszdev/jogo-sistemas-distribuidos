@@ -74,6 +74,7 @@ public interface ServicoJogo extends Remote {
 
     /**
      * Chamado uma vez por rodada de batalha com a ação escolhida (atacar ou trocar).
+     * A ação deve informar o número recebido em EstadoBatalha para impedir envios de rodadas antigas.
      *
      * @throws SessaoInvalidaException se o token não corresponde a uma sessão ativa
      * @throws FaseInvalidaException   se a partida do jogador não está na fase de batalha

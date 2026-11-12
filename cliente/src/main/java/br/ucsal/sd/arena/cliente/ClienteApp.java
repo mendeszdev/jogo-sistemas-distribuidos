@@ -4,13 +4,11 @@ import br.ucsal.sd.arena.cliente.ui.TelaConexao;
 import br.ucsal.sd.arena.cliente.ui.TelaLobby;
 import br.ucsal.sd.arena.cliente.ui.TelaDraft;
 import br.ucsal.sd.arena.cliente.ui.TelaBatalha;
+import br.ucsal.sd.arena.cliente.ui.TelaResultado;
 import br.ucsal.sd.arena.compartilhado.dto.Criatura;
 import java.util.List;
 import br.ucsal.sd.arena.compartilhado.dto.EstadoBatalha;
 import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
-import javafx.geometry.Insets;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -54,8 +52,11 @@ public class ClienteApp extends Application {
         lobby.setAoPartidaEncerrada(resultado -> {
             encerrarDraft();
             encerrarBatalha();
-            mostrarMensagem("Partida encerrada", "Vencedor: " + resultado.vencedor()
-                    + (resultado.porWO() ? " (W.O.)" : ""));
+            trocarTela(new TelaResultado(lobbyAtual.getNome(), resultado, catalogo,
+                    () -> trocarTela(lobbyAtual.getRaiz()), () -> {
+                        trocarTela(lobbyAtual.getRaiz());
+                        lobbyAtual.buscarNovaPartida();
+                    }).getRaiz());
         });
         trocarTela(lobby.getRaiz());
     }
@@ -74,16 +75,6 @@ public class ClienteApp extends Application {
         batalhaAtual = new TelaBatalha(lobbyAtual.getConexao(), catalogo);
         batalhaAtual.atualizar(estado);
         trocarTela(batalhaAtual.getRaiz());
-    }
-
-    private void mostrarMensagem(String titulo, String texto) {
-        Label cabecalho = new Label(titulo);
-        cabecalho.getStyleClass().add("titulo");
-        VBox raiz = new VBox(16, cabecalho, new Label(texto));
-        raiz.setPadding(new Insets(24));
-        raiz.getStyleClass().add("raiz");
-        raiz.getStylesheets().add(ClienteApp.class.getResource("/br/ucsal/sd/arena/cliente/arena.css").toExternalForm());
-        trocarTela(raiz);
     }
 
     private void encerrarDraft() {
