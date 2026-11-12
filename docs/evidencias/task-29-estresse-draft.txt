@@ -1,0 +1,17 @@
+TASK 29 - TESTE DE ESTRESSE DO DRAFT
+Inicio UTC: 2026-11-12T15:29:46.3203612+00:00
+Comando: mvn -pl servidor -am test -Dtest=DraftEstresseTest -Dsurefire.failIfNoSpecifiedTests=false
+Escopo: chamadas concorrentes a Partida.escolherCriatura; sem transporte RMI.
+Carga: 32 threads de plataforma, 1000 iteracoes por cenario, largada sincronizada.
+
+[ESTRESSE-DRAFT] cenario=pool-compartilhado | iteracoes=1000 | threads=32 | tarefas=32000 | aceitas=6000 | indisponiveis=2704 | limite=4951 | fora_da_fase=18345 | timeouts=0 | automaticas=0 | maior_time=3 | duplicacoes=0 | violacoes=0 | tempo_ms=594
+[ESTRESSE-DRAFT] cenario=limite-por-jogador | iteracoes=1000 | threads=32 | tarefas=32000 | aceitas=3000 | indisponiveis=7947 | limite=21053 | fora_da_fase=0 | timeouts=0 | automaticas=0 | maior_time=3 | duplicacoes=0 | violacoes=0 | tempo_ms=373
+[ESTRESSE-DRAFT] cenario=escolhas-contra-timeout | iteracoes=1000 | threads=32 | tarefas=32000 | aceitas=4808 | indisponiveis=2517 | limite=1912 | fora_da_fase=21763 | timeouts=1000 | automaticas=1192 | maior_time=3 | duplicacoes=0 | violacoes=0 | tempo_ms=374
+[ESTRESSE-DRAFT] cenario=mesma-criatura | iteracoes=1000 | threads=32 | tarefas=32000 | aceitas=1000 | indisponiveis=31000 | limite=0 | fora_da_fase=0 | timeouts=0 | automaticas=0 | maior_time=1 | duplicacoes=0 | violacoes=0 | tempo_ms=304
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.721 s -- in br.ucsal.sd.arena.servidor.DraftEstresseTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  6.671 s
+[INFO] Finished at: 2026-11-12T12:29:54-03:00
+
+Status: APROVADO
