@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.time.Duration;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  * Barreira de uma rodada simultânea: espera a ação dos dois jogadores (ou o timeout) e resolve uma única vez.
@@ -30,6 +32,17 @@ public final class RodadaSimultanea {
     private final Object lock = new Object();
     private final Map<String, Acao> acoes = new LinkedHashMap<>(); // guardado por lock
     private boolean fechada;                                       // guardado por lock
+    private ScheduledFuture<?> timer;                              // guardado por lock
+
+    /** Inicia o prazo ao criar a rodada; a sala deve reutilizar e fechar o mesmo timer. */
+    public RodadaSimultanea(int numero, String tokenA, String tokenB, ResolvedorRodada resolvedor,
+                            PoliticaAcaoPadrao politica, Consumer<Map<String, ResultadoRodada>> aoResolver,
+                            TimerTurno timerSala, Duration duracao) {
+        this(numero, tokenA, tokenB, resolvedor, politica, aoResolver);
+        synchronized (lock) {
+            timer = Objects.requireNonNull(timerSala, "timerSala").agendar(this::fecharPorTimeout, duracao);
+        }
+    }
 
     public RodadaSimultanea(int numero, String tokenA, String tokenB, ResolvedorRodada resolvedor,
                             PoliticaAcaoPadrao politica, Consumer<Map<String, ResultadoRodada>> aoResolver) {
@@ -54,6 +67,14 @@ public final class RodadaSimultanea {
         }
     }
 
+    /** Invalida a rodada no encerramento da sala, sem executar ações pendentes. */
+    public void cancelar() {
+        synchronized (lock) {
+            fechada = true;
+            cancelarTimer();
+        }
+    }
+
     /** Registra a ação; se for a segunda, esta thread fecha a rodada e a resolve. */
     public void registrarAcao(String token, Acao acao) throws ForaDaRodadaException {
         Objects.requireNonNull(acao, "acao");
@@ -71,6 +92,7 @@ public final class RodadaSimultanea {
             acoes.put(token, acao);
             if (acoes.size() == 2) {
                 fechada = true;
+                cancelarTimer();
                 paraResolver = new LinkedHashMap<>(acoes);
             }
         }
@@ -89,6 +111,7 @@ public final class RodadaSimultanea {
             acoes.computeIfAbsent(tokenA, politica::acaoPadrao);
             acoes.computeIfAbsent(tokenB, politica::acaoPadrao);
             fechada = true;
+            cancelarTimer();
             paraResolver = new LinkedHashMap<>(acoes);
         }
         resolverFora(paraResolver);
@@ -98,5 +121,9 @@ public final class RodadaSimultanea {
     private void resolverFora(Map<String, Acao> acoesFinais) {
         Map<String, ResultadoRodada> resultados = resolvedor.resolver(numero, Map.copyOf(acoesFinais));
         aoResolver.accept(resultados);
+    }
+
+    private void cancelarTimer() {
+        if (timer != null) timer.cancel(false);
     }
 }
