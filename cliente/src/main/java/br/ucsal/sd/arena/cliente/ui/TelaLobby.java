@@ -61,6 +61,7 @@ public final class TelaLobby implements OuvinteEventosJogo {
     private Consumer<PartidaInfo> aoPartidaEncontrada = info -> { };
     private Consumer<EstadoDraft> aoDraftAtualizado = estado -> { };
     private Consumer<EstadoBatalha> aoBatalhaIniciada = estado -> { };
+    private Consumer<ResultadoRodada> aoRodadaResolvida = resultado -> { };
     private Consumer<ResultadoPartida> aoPartidaEncerrada = resultado -> { };
 
     public TelaLobby(String nome, String endereco, ConexaoServidor conexao) {
@@ -164,6 +165,10 @@ public final class TelaLobby implements OuvinteEventosJogo {
 
     public void setAoBatalhaIniciada(Consumer<EstadoBatalha> ouvinte) {
         aoBatalhaIniciada = ouvinte;
+    }
+
+    public void setAoRodadaResolvida(Consumer<ResultadoRodada> ouvinte) {
+        aoRodadaResolvida = ouvinte;
     }
 
     public void setAoPartidaEncerrada(Consumer<ResultadoPartida> ouvinte) {
@@ -310,7 +315,9 @@ public final class TelaLobby implements OuvinteEventosJogo {
     }
 
     @Override
-    public void rodadaResolvida(ResultadoRodada resultado) { }
+    public void rodadaResolvida(ResultadoRodada resultado) {
+        Platform.runLater(() -> aoRodadaResolvida.accept(resultado));
+    }
 
     @Override
     public void partidaEncerrada(ResultadoPartida resultado) {

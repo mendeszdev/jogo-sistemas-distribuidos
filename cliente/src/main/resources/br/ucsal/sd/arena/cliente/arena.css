@@ -54,3 +54,8 @@
 .tipo-fogo { -fx-text-fill: #FFAA72; -fx-border-color: #F97316; }
 .tipo-agua { -fx-text-fill: #7DD3FC; -fx-border-color: #38BDF8; }
 .tipo-planta { -fx-text-fill: #86EFAC; -fx-border-color: #4ADE80; }
+
+/* Batalha */
+.hp-batalha { -fx-accent: #4ADE80; -fx-pref-height: 18; }
+.log-batalha { -fx-text-fill: #F2F4F8; -fx-control-inner-background: #1E2230; -fx-font-size: 13px; }
+.log-batalha .content { -fx-background-color: #1E2230; }
