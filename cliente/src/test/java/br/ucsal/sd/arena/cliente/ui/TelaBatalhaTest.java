@@ -85,7 +85,7 @@ class TelaBatalhaTest {
         try {
             fx(() -> { tela.atualizar(estado(1, 30)); botoes().get(1).fire(); });
             assertTrue(entrou.await(5, TimeUnit.SECONDS));
-            assertEquals(new Acao(TipoAcao.TROCAR, 0), acao.get());
+            assertEquals(new Acao(TipoAcao.TROCAR, 0, 1), acao.get());
             fx(() -> { assertTrue(botoes().stream().allMatch(Node::isDisabled)); tela.atualizar(estado(2, 30)); });
         } finally { liberar.countDown(); }
         assertTrue(saiu.await(5, TimeUnit.SECONDS));
@@ -95,7 +95,7 @@ class TelaBatalhaTest {
     @Test void confirmaAtaqueEAguardaAdversario() throws Exception {
         CountDownLatch enviou = new CountDownLatch(1);
         ServicoJogo s = (ServicoJogo) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{ServicoJogo.class}, (p, m, args) -> {
-            assertEquals(new Acao(TipoAcao.ATACAR, 0), args[1]); enviou.countDown(); return null;
+            assertEquals(new Acao(TipoAcao.ATACAR, 0, 1), args[1]); enviou.countDown(); return null;
         });
         criar(s);
         fx(() -> { tela.atualizar(estado(1, 30)); botoes().getFirst().fire(); });

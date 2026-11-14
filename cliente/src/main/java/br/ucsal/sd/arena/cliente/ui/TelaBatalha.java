@@ -181,7 +181,8 @@ public final class TelaBatalha {
         String token = conexao.getToken();
         Thread chamada = new Thread(() -> {
             Exception falha = null;
-            try { servico.enviarAcao(token, acao); } catch (Exception e) { falha = e; }
+            try { servico.enviarAcao(token, new Acao(acao.tipo(), acao.indice(), rodadaEnviada)); }
+            catch (Exception e) { falha = e; }
             Exception erro = falha;
             Platform.runLater(() -> {
                 // O callback da próxima rodada pode chegar antes do retorno desta chamada.

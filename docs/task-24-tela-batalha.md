@@ -8,7 +8,7 @@ Ataques enviam `Acao(ATACAR, indiceDoAtaque)` e trocas enviam `Acao(TROCAR, indi
 
 ## Dependência do servidor
 
-Na main usada nesta implementação, `Partida.enviarAcao` ainda lança `UnsupportedOperationException("TODO card 19")` e o estado inicial tem zero segundos. Assim, a tela real abre ao concluir o draft, mas aguarda o servidor com ações desabilitadas. O card 19 precisa fornecer o prazo da rodada, processar ações e emitir `rodadaResolvida` para uma batalha completa. A interface não inventa um timer ou resultado local.
+A task 18 conecta `Partida.enviarAcao`, a barreira de ações simultâneas e o timer da task 20. O estado inicial recebe o prazo da rodada e `rodadaResolvida` atualiza HP, ativas, reservas e relógio. O envio inclui `Acao.numeroRodada`, que permite rejeitar requisições atrasadas. Ao encerrar, `TelaResultado` apresenta as duas equipes e permite voltar ao lobby ou buscar outra partida. A interface não calcula resultados locais.
 
 ## Validação
 

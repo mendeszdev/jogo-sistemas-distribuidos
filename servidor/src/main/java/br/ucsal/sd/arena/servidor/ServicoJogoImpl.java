@@ -140,9 +140,10 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
     @Override
     public void enviarAcao(String token, Acao acao) throws RemoteException, SessaoInvalidaException,
             FaseInvalidaException, ForaDaRodadaException, AcaoInvalidaException {
-        // TODO card 19: com a Partida (cards 14/15), obter a RodadaSimultanea corrente da partida do token e
-        //  chamar rodada.registrarAcao(token, acao); os callbacks saem fora do lock (ver RodadaSimultanea).
-        throw new UnsupportedOperationException("TODO card 19");
+        SessaoJogador sessao = exigirSessao(token);
+        Partida partida = sessao.getPartida();
+        if (partida == null) throw new FaseInvalidaException("Jogador não está em uma partida");
+        partida.enviarAcao(sessao, acao);
     }
 
     /**
@@ -160,10 +161,8 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
             // --- card 22 (W.O.): só depois de existir Partida.encerrarPorWO ---
             Partida partida = sessao.getPartida();
             if (partida != null) { // W.O.: o adversário vence e volta a ficar livre
-                SessaoJogador adversario = partida.getAdversario(sessao);
                 if (partida.encerrarPorWO(sessao)) {
-                    adversario.setPartida(null);
-                    adversario.trocarStatus(StatusJogador.EM_PARTIDA, StatusJogador.LIVRE);
+                    liberarPartida(partida);
                 }
             }
             notificarLobby();
@@ -195,7 +194,7 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
             boolean okA = a.trocarStatus(StatusJogador.EM_FILA, StatusJogador.EM_PARTIDA);
             boolean okB = b.trocarStatus(StatusJogador.EM_FILA, StatusJogador.EM_PARTIDA);
             if (okA && okB) {
-                Partida partida = new Partida(UUID.randomUUID().toString(), a, b, notificador);
+                Partida partida = new Partida(UUID.randomUUID().toString(), a, b, notificador, this::liberarPartida);
                 a.setPartida(partida);
                 b.setPartida(partida);
                 partida.iniciar();
@@ -219,6 +218,22 @@ public class ServicoJogoImpl extends UnicastRemoteObject implements ServicoJogo 
         List<JogadorOnline> jogadores = jogadoresOnline();
         for (SessaoJogador s : sessoes.values()) {
             notificador.notificar(s, cb -> cb.jogadoresOnlineAtualizados(jogadores));
+        }
+    }
+
+    /** Libera os dois participantes após eliminação ou W.O., sem afetar uma partida posterior. */
+    private void liberarPartida(Partida partida) {
+        lobbyLock.lock();
+        try {
+            for (SessaoJogador jogador : List.of(partida.getJogadorA(), partida.getJogadorB())) {
+                if (jogador.getPartida() == partida) {
+                    jogador.setPartida(null);
+                    jogador.trocarStatus(StatusJogador.EM_PARTIDA, StatusJogador.LIVRE);
+                }
+            }
+            notificarLobby();
+        } finally {
+            lobbyLock.unlock();
         }
     }
 

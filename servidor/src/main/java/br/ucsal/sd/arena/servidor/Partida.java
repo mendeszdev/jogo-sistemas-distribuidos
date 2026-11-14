@@ -3,11 +3,15 @@ package br.ucsal.sd.arena.servidor;
 import br.ucsal.sd.arena.compartilhado.dto.Acao;
 import br.ucsal.sd.arena.compartilhado.dto.Criatura;
 import br.ucsal.sd.arena.compartilhado.dto.EstadoBatalha;
-import br.ucsal.sd.arena.compartilhado.dto.EstadoCriaturaEmBatalha;
 import br.ucsal.sd.arena.compartilhado.dto.EstadoDraft;
 import br.ucsal.sd.arena.compartilhado.dto.FasePartida;
 import br.ucsal.sd.arena.compartilhado.dto.PartidaInfo;
 import br.ucsal.sd.arena.compartilhado.dto.ResultadoPartida;
+import br.ucsal.sd.arena.compartilhado.dto.ResultadoRodada;
+import br.ucsal.sd.arena.servidor.batalha.MotorBatalha;
+import br.ucsal.sd.arena.servidor.batalha.PoliticaAcaoPadrao;
+import br.ucsal.sd.arena.servidor.batalha.RodadaSimultanea;
+import br.ucsal.sd.arena.servidor.batalha.TimerTurno;
 import br.ucsal.sd.arena.compartilhado.excecao.AcaoInvalidaException;
 import br.ucsal.sd.arena.compartilhado.excecao.CriaturaIndisponivelException;
 import br.ucsal.sd.arena.compartilhado.excecao.FaseInvalidaException;
@@ -20,12 +24,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-/** Estado autoritativo de uma sala. Todo estado mutável do draft é protegido por lock. */
+/** Estado autoritativo de uma sala. Draft, motor e transições são protegidos pelo monitor da partida. */
 public final class Partida {
     private static final ScheduledThreadPoolExecutor TIMERS = criarTimers();
     private final Object lock = new Object();
@@ -34,6 +40,12 @@ public final class Partida {
     private final Set<Integer> escolhasB = new LinkedHashSet<>();
     private final ScheduledExecutorService scheduler;
     private final long duracaoNanos;
+    private final Duration duracaoTurno;
+    private final Consumer<Partida> aoEncerrar;
+    private TimerTurno timerTurno;
+    private RodadaSimultanea rodada;
+    private MotorBatalha motor;
+    private long prazoTurnoNanos;
     private boolean iniciada;
     private long prazoNanos;
     private long epoca;
@@ -48,16 +60,29 @@ public final class Partida {
         this(id, jogadorA, jogadorB, notificador, TIMERS, Duration.ofSeconds(30));
     }
 
+    public Partida(String id, SessaoJogador jogadorA, SessaoJogador jogadorB, NotificadorCallbacks notificador,
+                   Consumer<Partida> aoEncerrar) {
+        this(id, jogadorA, jogadorB, notificador, TIMERS, Duration.ofSeconds(30),
+                TimerTurno.DURACAO_PADRAO, aoEncerrar);
+    }
+
     // Scheduler e duração injetáveis para testar sem esperar 30 segundos.
     Partida(String id, SessaoJogador jogadorA, SessaoJogador jogadorB, NotificadorCallbacks notificador,
             ScheduledExecutorService scheduler, Duration duracao) {
+        this(id, jogadorA, jogadorB, notificador, scheduler, duracao, TimerTurno.DURACAO_PADRAO, p -> { });
+    }
+
+    Partida(String id, SessaoJogador jogadorA, SessaoJogador jogadorB, NotificadorCallbacks notificador,
+            ScheduledExecutorService scheduler, Duration duracao, Duration duracaoTurno, Consumer<Partida> aoEncerrar) {
         this.id = Objects.requireNonNull(id);
         this.jogadorA = Objects.requireNonNull(jogadorA);
         this.jogadorB = Objects.requireNonNull(jogadorB);
         this.notificador = Objects.requireNonNull(notificador);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.duracaoNanos = duracao.toNanos();
-        if (duracaoNanos <= 0 || jogadorA == jogadorB) {
+        this.duracaoTurno = Objects.requireNonNull(duracaoTurno);
+        this.aoEncerrar = Objects.requireNonNull(aoEncerrar);
+        if (duracaoNanos <= 0 || duracaoTurno.toNanos() <= 0 || jogadorA == jogadorB) {
             throw new IllegalArgumentException("Duração positiva e dois jogadores distintos são obrigatórios");
         }
     }
@@ -121,8 +146,8 @@ public final class Partida {
                 throw new LimiteDeEscolhasException("O jogador já escolheu 3 criaturas");
             }
             escolhas.add(idCriatura);
-            if (escolhasA.size() == 3 && escolhasB.size() == 3) terminarDraft();
             notificarDraft();
+            if (escolhasA.size() == 3 && escolhasB.size() == 3) terminarDraft();
         }
     }
 
@@ -140,8 +165,8 @@ public final class Partida {
             for (Set<Integer> escolhas : List.of(escolhasA, escolhasB)) {
                 while (escolhas.size() < 3) {
                     escolhas.add(livres.remove(livres.size() - 1));
-                    if (escolhasA.size() == 3 && escolhasB.size() == 3) terminarDraft();
                     notificarDraft();
+                    if (escolhasA.size() == 3 && escolhasB.size() == 3) terminarDraft();
                 }
             }
         }
@@ -160,7 +185,8 @@ public final class Partida {
     }
 
     private EstadoDraft estadoDraft(SessaoJogador jogador) {
-        long restante = iniciada && fase == FasePartida.DRAFT ? Math.max(0, prazoNanos - System.nanoTime()) : 0;
+        long restante = iniciada && fase == FasePartida.DRAFT && escolhasA.size() + escolhasB.size() < 6
+                ? Math.max(0, prazoNanos - System.nanoTime()) : 0;
         int segundos = (int) Math.min(Integer.MAX_VALUE, TimeUnit.NANOSECONDS.toSeconds(restante)
                 + (restante % TimeUnit.SECONDS.toNanos(1) == 0 ? 0 : 1));
         return new EstadoDraft(pool, new ArrayList<>(escolhasDe(jogador)),
@@ -178,26 +204,65 @@ public final class Partida {
     private void terminarDraft() {
         if (!transitar(FasePartida.DRAFT, FasePartida.BATALHA)) return;
         cancelarTimer();
-        EstadoBatalha estadoA = estadoBatalhaInicial(jogadorA);
-        EstadoBatalha estadoB = estadoBatalhaInicial(jogadorB);
+        motor = new MotorBatalha(jogadorA.getToken(), jogadorA.getNome(), criaturasEscolhidas(jogadorA),
+                jogadorB.getToken(), jogadorB.getNome(), criaturasEscolhidas(jogadorB));
+        timerTurno = new TimerTurno(id);
+        iniciarRodada(1);
+        EstadoBatalha estadoA = motor.estado(jogadorA.getToken(), segundosTurno());
+        EstadoBatalha estadoB = motor.estado(jogadorB.getToken(), segundosTurno());
         notificador.notificar(jogadorA, cb -> cb.batalhaIniciada(estadoA));
         notificador.notificar(jogadorB, cb -> cb.batalhaIniciada(estadoB));
     }
 
-    private EstadoBatalha estadoBatalhaInicial(SessaoJogador jogador) {
-        List<Integer> minhas = new ArrayList<>(escolhasDe(jogador));
-        List<Integer> adversarias = new ArrayList<>(escolhasDe(getAdversario(jogador)));
-        EstadoCriaturaEmBatalha ativa = emBatalha(minhas.get(0));
-        List<EstadoCriaturaEmBatalha> reservas = List.of(emBatalha(minhas.get(1)), emBatalha(minhas.get(2)));
-        EstadoCriaturaEmBatalha ativaAdversario = emBatalha(adversarias.get(0));
-        // Timer da primeira rodada será iniciado quando enviarAcao for implementado (card 19 pendente).
-        return new EstadoBatalha(1, ativa, reservas, ativaAdversario, 2, 0);
+    private List<Criatura> criaturasEscolhidas(SessaoJogador jogador) {
+        return escolhasDe(jogador).stream().map(idCriatura -> pool.stream()
+                .filter(c -> c.id() == idCriatura).findFirst().orElseThrow()).toList();
     }
 
-    private EstadoCriaturaEmBatalha emBatalha(int idCriatura) {
-        Criatura criatura = pool.stream().filter(c -> c.id() == idCriatura).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Criatura ausente do pool: " + idCriatura));
-        return new EstadoCriaturaEmBatalha(criatura.id(), criatura.hpMax());
+    private void iniciarRodada(int numero) {
+        prazoTurnoNanos = System.nanoTime() + duracaoTurno.toNanos();
+        rodada = new RodadaSimultanea(numero, jogadorA.getToken(), jogadorB.getToken(),
+                this::resolverRodada, PoliticaAcaoPadrao.ATAQUE_BASICO, resultados -> { }, timerTurno, duracaoTurno);
+    }
+
+    private int segundosTurno() {
+        long restante = Math.max(0, prazoTurnoNanos - System.nanoTime());
+        return (int) Math.min(Integer.MAX_VALUE, TimeUnit.NANOSECONDS.toSeconds(restante)
+                + (restante % TimeUnit.SECONDS.toNanos(1) == 0 ? 0 : 1));
+    }
+
+    private Map<String, ResultadoRodada> resolverRodada(int numero, Map<String, Acao> acoes) {
+        Map<String, ResultadoRodada> resultados;
+        boolean terminou;
+        synchronized (lock) {
+            // Um timeout que já estava em execução perde efeito após o W.O. ou avanço da rodada.
+            if (fase != FasePartida.BATALHA || rodada.getNumero() != numero) return Map.of();
+            Map<String, ResultadoRodada> resolvidos = motor.resolver(numero, acoes);
+            terminou = motor.encerrada();
+            if (terminou) {
+                transitar(FasePartida.BATALHA, FasePartida.ENCERRADA);
+                timerTurno.close();
+            } else {
+                iniciarRodada(numero + 1);
+            }
+            int segundos = terminou ? 0 : segundosTurno();
+            ResultadoRodada resultadoA = new ResultadoRodada(numero, resolvidos.get(jogadorA.getToken()).eventos(),
+                    motor.estado(jogadorA.getToken(), segundos));
+            ResultadoRodada resultadoB = new ResultadoRodada(numero, resolvidos.get(jogadorB.getToken()).eventos(),
+                    motor.estado(jogadorB.getToken(), segundos));
+            resultados = Map.of(jogadorA.getToken(), resultadoA, jogadorB.getToken(), resultadoB);
+            notificador.notificar(jogadorA, cb -> cb.rodadaResolvida(resultadoA));
+            notificador.notificar(jogadorB, cb -> cb.rodadaResolvida(resultadoB));
+            if (terminou) {
+                ResultadoPartida finalA = motor.resultado(jogadorA.getToken(), motor.vencedor(), false);
+                ResultadoPartida finalB = motor.resultado(jogadorB.getToken(), motor.vencedor(), false);
+                notificador.notificar(jogadorA, cb -> cb.partidaEncerrada(finalA));
+                notificador.notificar(jogadorB, cb -> cb.partidaEncerrada(finalB));
+            }
+        }
+        // O lobby tem seu próprio lock: nunca entrar nele segurando o monitor da sala.
+        if (terminou) aoEncerrar.accept(this);
+        return resultados;
     }
 
     private boolean transitar(FasePartida de, FasePartida para) {
@@ -224,7 +289,18 @@ public final class Partida {
 
     public void enviarAcao(SessaoJogador jogador, Acao acao) throws FaseInvalidaException,
             ForaDaRodadaException, AcaoInvalidaException {
-        throw new UnsupportedOperationException("TODO card 19");
+        RodadaSimultanea atual;
+        synchronized (lock) {
+            if (!contem(jogador)) throw new ForaDaRodadaException("Jogador não pertence à partida");
+            if (fase != FasePartida.BATALHA) throw new FaseInvalidaException("A batalha não está ativa");
+            atual = rodada;
+            if (acao != null && acao.numeroRodada() != atual.getNumero()) {
+                throw new ForaDaRodadaException("A ação não pertence à rodada atual");
+            }
+            motor.validarAcao(jogador.getToken(), acao);
+        }
+        // Registrar pode resolver a rodada; não manter o monitor da partida durante essa chamada.
+        atual.registrarAcao(jogador.getToken(), acao);
     }
     /**
      * W.O.: o jogador desconectado perde e o adversário vence. Idempotente: só a primeira chamada encerra.
@@ -237,8 +313,11 @@ public final class Partida {
             if (fase == FasePartida.ENCERRADA) return false;
             transitar(fase, FasePartida.ENCERRADA);
             cancelarTimer();
-            // TODO card 19: preencher rodadasJogadas e os times finais da batalha
-            ResultadoPartida resultado = new ResultadoPartida(vencedor.getNome(), true, 0, List.of(), List.of());
+            if (rodada != null) rodada.cancelar();
+            if (timerTurno != null) timerTurno.close();
+            ResultadoPartida resultado = motor == null
+                    ? new ResultadoPartida(vencedor.getNome(), true, 0, List.of(), List.of())
+                    : motor.resultado(vencedor.getToken(), vencedor.getNome(), true);
             notificador.notificar(vencedor, cb -> cb.partidaEncerrada(resultado));
             return true;
         }

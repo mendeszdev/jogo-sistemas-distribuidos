@@ -30,12 +30,12 @@ uma resolução em execução, sem interrompê-la.
 ## Integração
 
 A barreira do card 19 aceita o timer no novo construtor. O construtor anterior
-continua disponível para chamadas sem temporização. Nesta base,
-`Partida.enviarAcao` ainda lança `UnsupportedOperationException` e não há uma
-implementação concreta de `ResolvedorRodada`. Ao conectar o motor e o fluxo de
-ações, a partida deve criar as rodadas com o construtor temporizado e executar
-o cancelamento acima no encerramento. O timer não implementa regras de dano,
-trocas ou seleção de vencedor.
+continua disponível para chamadas sem temporização. A task 18 conecta esse
+construtor ao ciclo de vida de `Partida`, implementa `MotorBatalha` como resolvedor
+e cancela a rodada e o timer no encerramento. A conferência monotônica do prazo
+na própria barreira também impede aceitar ações vencidas quando a thread do
+timer estiver ocupada. O timer não implementa regras de dano, trocas ou seleção
+de vencedor.
 
 ## Validação
 

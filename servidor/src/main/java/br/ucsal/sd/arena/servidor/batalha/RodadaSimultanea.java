@@ -33,6 +33,7 @@ public final class RodadaSimultanea {
     private final Map<String, Acao> acoes = new LinkedHashMap<>(); // guardado por lock
     private boolean fechada;                                       // guardado por lock
     private ScheduledFuture<?> timer;                              // guardado por lock
+    private long prazoNanos;                                      // guardado por lock
 
     /** Inicia o prazo ao criar a rodada; a sala deve reutilizar e fechar o mesmo timer. */
     public RodadaSimultanea(int numero, String tokenA, String tokenB, ResolvedorRodada resolvedor,
@@ -40,6 +41,7 @@ public final class RodadaSimultanea {
                             TimerTurno timerSala, Duration duracao) {
         this(numero, tokenA, tokenB, resolvedor, politica, aoResolver);
         synchronized (lock) {
+            prazoNanos = System.nanoTime() + duracao.toNanos();
             timer = Objects.requireNonNull(timerSala, "timerSala").agendar(this::fecharPorTimeout, duracao);
         }
     }
@@ -79,6 +81,7 @@ public final class RodadaSimultanea {
     public void registrarAcao(String token, Acao acao) throws ForaDaRodadaException {
         Objects.requireNonNull(acao, "acao");
         Map<String, Acao> paraResolver = null;
+        boolean expirou = false;
         synchronized (lock) {
             if (fechada) {
                 throw new ForaDaRodadaException("Rodada " + numero + " já encerrada");
@@ -89,8 +92,13 @@ public final class RodadaSimultanea {
             if (acoes.containsKey(token)) {
                 throw new ForaDaRodadaException("Ação já enviada nesta rodada");
             }
-            acoes.put(token, acao);
-            if (acoes.size() == 2) {
+            if (timer != null && System.nanoTime() - prazoNanos >= 0) {
+                expirou = true;
+                completarAcoes();
+            } else {
+                acoes.put(token, acao);
+            }
+            if (expirou || acoes.size() == 2) {
                 fechada = true;
                 cancelarTimer();
                 paraResolver = new LinkedHashMap<>(acoes);
@@ -99,6 +107,7 @@ public final class RodadaSimultanea {
         if (paraResolver != null) {
             resolverFora(paraResolver);
         }
+        if (expirou) throw new ForaDaRodadaException("Prazo da rodada " + numero + " esgotado");
     }
 
     /** Chamado pela thread do timer: completa as ações faltantes com a política padrão e fecha. */
@@ -108,8 +117,7 @@ public final class RodadaSimultanea {
             if (fechada) {
                 return; // já fechada pelas ações: o timeout chegou tarde e não faz nada
             }
-            acoes.computeIfAbsent(tokenA, politica::acaoPadrao);
-            acoes.computeIfAbsent(tokenB, politica::acaoPadrao);
+            completarAcoes();
             fechada = true;
             cancelarTimer();
             paraResolver = new LinkedHashMap<>(acoes);
@@ -125,5 +133,10 @@ public final class RodadaSimultanea {
 
     private void cancelarTimer() {
         if (timer != null) timer.cancel(false);
+    }
+
+    private void completarAcoes() {
+        acoes.computeIfAbsent(tokenA, politica::acaoPadrao);
+        acoes.computeIfAbsent(tokenB, politica::acaoPadrao);
     }
 }
